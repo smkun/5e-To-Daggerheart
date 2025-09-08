@@ -226,11 +226,23 @@ function buildFeatures(mon, role){
   }
   // Convert specific D&D traits by keyword
   if (hasTrait(mon, /pack tactics/i)) feats.push({ kind:'Passive', name:'Pack Hunters', text:'Has advantage on attacks against targets within Very Close range of one of its allies.' });
-  if (hasTrait(mon, /poison|venom/i) || hasAction(mon, /poison|venom/i)) feats.push({ kind:'Action', name:'Venomous Strike', text:'Make an attack. On success, deal normal damage and the target becomes Infected until they heal any HP (disadvantage on action rolls while infected).' });
+  // Venomous/Poison attacks with damage extraction
+  if (hasTrait(mon, /poison|venom/i) || hasAction(mon, /poison|venom/i)) {
+    const poisonAction = findActionWithKeyword(mon, /poison|venom/i);
+    const damageInfo = poisonAction ? extractDamageFromText(poisonAction.entries?.join(' ') || poisonAction.desc || '') : null;
+    const venomText = `Make an attack. On success, deal normal damage${damageInfo ? ` plus ${damageInfo} poison damage` : ''} and the target becomes Infected until they heal any HP (disadvantage on action rolls while infected).`;
+    feats.push({ kind:'Action', name:'Venomous Strike', text: venomText });
+  }
   if (hasTrait(mon, /regeneration/i)) feats.push({ kind:'Passive', name:'Regeneration', text:'At the start of this adversary\'s turn, they heal 1 HP unless they have taken damage since their last turn.' });
   if (hasTrait(mon, /magic resistance/i)) feats.push({ kind:'Passive', name:'Magic Resistance', text:'Has advantage on Instinct rolls against spells and magical effects.' });
   if (hasTrait(mon, /keen sight|keen smell|keen hearing/i)) feats.push({ kind:'Passive', name:'Keen Senses', text:'Cannot be surprised and has advantage on rolls to detect hidden creatures.' });
-  if (hasTrait(mon, /charge/i)) feats.push({ kind:'Action', name:'Charge', text:'Move Close and make an attack. On success, deal one die-step higher damage.' });
+  // Charge attacks with damage extraction
+  if (hasTrait(mon, /charge/i)) {
+    const chargeAction = findActionWithKeyword(mon, /charge/i);
+    const damageInfo = chargeAction ? extractDamageFromText(chargeAction.entries?.join(' ') || chargeAction.desc || '') : null;
+    const chargeText = `Move Close and make an attack. On success, deal one die-step higher damage${damageInfo ? ` plus ${damageInfo} additional damage` : ''}.`;
+    feats.push({ kind:'Action', name:'Charge', text: chargeText });
+  }
   if (hasTrait(mon, /lair actions/i)) feats.push({ kind:'Action', name:'Lair Actions', text:'Once per encounter, spend a Fear to trigger a dangerous environmental effect.' });
   if (hasTrait(mon, /amphibious/i)) feats.push({ kind:'Passive', name:'Amphibious', text:'Can move and fight equally well on land or in water.' });
   if (hasTrait(mon, /incorporeal|ethereal/i)) feats.push({ kind:'Passive', name:'Incorporeal', text:'Can move through solid objects and walls.' });
@@ -250,7 +262,13 @@ function buildFeatures(mon, role){
                         breathAction.name.includes('Lightning') ? 'Lightning Breath' :
                         breathAction.name.includes('Acid') ? 'Acid Breath' :
                         breathAction.name.includes('Poison') ? 'Poison Breath' : 'Breath Weapon';
-      feats.push({ kind:'Action', name:breathName, text:'Spend a Fear to unleash a devastating area attack affecting all enemies within Close range.' });
+      
+      // Extract damage from breath weapon description
+      const breathText = breathAction.entries?.join(' ') || breathAction.desc || '';
+      const damageInfo = extractBreathWeaponDamage(breathText);
+      
+      const breathDescription = `Spend a Fear to unleash a devastating area attack affecting all enemies within Close range${damageInfo ? `, dealing ${damageInfo} damage` : ''}.`;
+      feats.push({ kind:'Action', name:breathName, text:breathDescription });
     }
   }
   
@@ -285,6 +303,38 @@ function buildFeatures(mon, role){
     feats.push({ kind:'Passive', name:'Legendary Actions', text:'At the end of each PC turn, this adversary can take one additional action.' });
   }
 
+  // Life drain abilities
+  if (hasTrait(mon, /life drain|energy drain|drain life/i) || hasAction(mon, /life drain|energy drain|drain life/i)) {
+    const drainAction = findActionWithKeyword(mon, /life drain|energy drain|drain life/i);
+    const damageInfo = drainAction ? extractDamageFromText(drainAction.entries?.join(' ') || drainAction.desc || '') : null;
+    const drainText = `Make an attack. On success, deal normal damage${damageInfo ? ` plus ${damageInfo} necrotic damage` : ''} and heal 1 HP.`;
+    feats.push({ kind:'Action', name:'Life Drain', text: drainText });
+  }
+
+  // Stunning attacks
+  if (hasTrait(mon, /stun|stunning/i) || hasAction(mon, /stun|stunning/i)) {
+    const stunAction = findActionWithKeyword(mon, /stun|stunning/i);
+    const damageInfo = stunAction ? extractDamageFromText(stunAction.entries?.join(' ') || stunAction.desc || '') : null;
+    const stunText = `Make an attack. On success, deal normal damage${damageInfo ? ` plus ${damageInfo} additional damage` : ''} and the target is Stunned until the end of their next turn.`;
+    feats.push({ kind:'Action', name:'Stunning Strike', text: stunText });
+  }
+
+  // Psychic/Mental attacks
+  if (hasAction(mon, /psychic|mental|mind/i)) {
+    const psychicAction = findActionWithKeyword(mon, /psychic|mental|mind/i);
+    const damageInfo = psychicAction ? extractDamageFromText(psychicAction.entries?.join(' ') || psychicAction.desc || '') : null;
+    const psychicText = `Target within Close range must make an Instinct roll. On failure, take ${damageInfo || '1d8'} psychic damage and mark Stress.`;
+    feats.push({ kind:'Action', name:'Mind Blast', text: psychicText });
+  }
+
+  // Area/explosion effects
+  if (hasAction(mon, /explode|explosion|burst|blast.*radius/i)) {
+    const explosionAction = findActionWithKeyword(mon, /explode|explosion|burst|blast.*radius/i);
+    const damageInfo = explosionAction ? extractDamageFromText(explosionAction.entries?.join(' ') || explosionAction.desc || '') : null;
+    const explosionText = `When this adversary dies, all creatures within Close range take ${damageInfo || '1d6'} damage.`;
+    feats.push({ kind:'Passive', name:'Death Burst', text: explosionText });
+  }
+
   return feats;
 }
 function hasTrait(mon, re){
@@ -294,6 +344,55 @@ function hasTrait(mon, re){
 function hasAction(mon, re){
   const actions = mon.actions || mon.action || [];
   return actions.some(a => re.test(a.name||'') || re.test((a.entries?.join(' ')||a.desc||'')));
+}
+
+function extractDamageFromText(text) {
+  if (!text) return null;
+  
+  // Look for damage patterns like "91 (26d6)", "14 (4d6)", etc.
+  // This covers the common D&D format: average (dice)
+  const damageMatch = text.match(/(\d+)\s*\((\d+d\d+(?:\s*[+\-]\s*\d+)?)\)/);
+  if (damageMatch) {
+    const [, average, dice] = damageMatch;
+    // Convert to Daggerheart dice format
+    return convertDamageToTier(dice, parseInt(average));
+  }
+  
+  // Fallback: look for just dice patterns
+  const diceMatch = text.match(/(\d+d\d+(?:\s*[+\-]\s*\d+)?)/);
+  if (diceMatch) {
+    const dice = diceMatch[1];
+    const estimated = estimateDiceAverage(dice);
+    return convertDamageToTier(dice, estimated);
+  }
+  
+  return null;
+}
+
+// Legacy function name for compatibility
+function extractBreathWeaponDamage(text) {
+  return extractDamageFromText(text);
+}
+
+function estimateDiceAverage(dice) {
+  // Parse dice like "26d6" or "4d6+2"
+  const match = dice.match(/(\d+)d(\d+)(?:\s*([+\-])\s*(\d+))?/);
+  if (!match) return 0;
+  
+  const [, numDice, dieSize, sign, bonus] = match;
+  const average = parseInt(numDice) * (parseInt(dieSize) + 1) / 2;
+  const bonusValue = bonus ? (sign === '+' ? parseInt(bonus) : -parseInt(bonus)) : 0;
+  return Math.round(average + bonusValue);
+}
+
+function convertDamageToTier(originalDice, average) {
+  // Convert D&D damage to appropriate Daggerheart tier
+  if (average >= 80) return '3d12'; // Ancient dragons
+  if (average >= 60) return '3d10'; // Adult dragons  
+  if (average >= 40) return '2d12'; // Young dragons
+  if (average >= 20) return '2d8';  // Mid-tier
+  if (average >= 10) return '1d12'; // Low-tier
+  return '1d8'; // Minimal
 }
 
 function inferDescription(mon){ 
@@ -338,6 +437,16 @@ a.experience ? `Experience: ${a.experience}` : '',
 `FEATURES`,
 ...a.features.map(f => `${f.name} - ${f.kind}: ${f.text}`)
 ].filter(Boolean).join('\n');
+}
+
+function findActionWithKeyword(mon, regex) {
+  const actions = mon.actions || mon.action || [];
+  return actions.find(action => regex.test(action.name||'') || regex.test((action.entries?.join(' ')||action.desc||'')));
+}
+
+function findTraitWithKeyword(mon, regex) {
+  const traits = mon.traits || mon.trait || [];
+  return traits.find(trait => regex.test(trait.name||'') || regex.test((trait.entries?.join(' ')||trait.desc||'')));
 }
 
 // Global converter object for browser compatibility
