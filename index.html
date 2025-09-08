@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e to Daggerheart Converter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐉 D&D ➜ Daggerheart</h1>
+            <p>Convert D&D 5e monsters into Daggerheart adversaries</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <h2 class="section-title">Input Method</h2>
+
+                <!-- SRD Monster Selection -->
+                <div class="input-method active" id="srd-method">
+                    <div class="method-header" onclick="selectMethod('srd')">
+                        <input type="radio" name="method" value="srd" class="method-radio" id="method-srd" checked>
+                        <label for="method-srd" class="method-title">Choose from SRD Monsters</label>
+                    </div>
+                    <div class="method-content active">
+                        <div class="form-group">
+                            <label for="monster-select">Select Monster:</label>
+                            <select id="monster-select">
+                                <option value="">Loading monsters...</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="convertSRDMonster()">Convert Selected Monster</button>
+                    </div>
+                </div>
+
+                <!-- Custom Creature Form -->
+                <div class="input-method" id="custom-method">
+                    <div class="method-header" onclick="selectMethod('custom')">
+                        <input type="radio" name="method" value="custom" class="method-radio" id="method-custom">
+                        <label for="method-custom" class="method-title">Create Custom Creature</label>
+                    </div>
+                    <div class="method-content">
+                        <div class="form-group">
+                            <label for="custom-name">Name:</label>
+                            <input type="text" id="custom-name" placeholder="e.g., Ancient Red Dragon">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="custom-cr">Challenge Rating:</label>
+                                <input type="text" id="custom-cr" placeholder="e.g., 24">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-hp">Hit Points:</label>
+                                <input type="number" id="custom-hp" placeholder="e.g., 546">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-ac">Armor Class:</label>
+                                <input type="number" id="custom-ac" placeholder="e.g., 22">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="custom-str">STR:</label>
+                                <input type="number" id="custom-str" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-dex">DEX:</label>
+                                <input type="number" id="custom-dex" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-con">CON:</label>
+                                <input type="number" id="custom-con" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-int">INT:</label>
+                                <input type="number" id="custom-int" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-wis">WIS:</label>
+                                <input type="number" id="custom-wis" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-cha">CHA:</label>
+                                <input type="number" id="custom-cha" placeholder="10">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="custom-type">Creature Type:</label>
+                            <select id="custom-type">
+                                <option value="">Select type...</option>
+                                <option value="aberration">Aberration</option>
+                                <option value="beast">Beast</option>
+                                <option value="celestial">Celestial</option>
+                                <option value="construct">Construct</option>
+                                <option value="dragon">Dragon</option>
+                                <option value="elemental">Elemental</option>
+                                <option value="fey">Fey</option>
+                                <option value="fiend">Fiend</option>
+                                <option value="giant">Giant</option>
+                                <option value="humanoid">Humanoid</option>
+                                <option value="monstrosity">Monstrosity</option>
+                                <option value="ooze">Ooze</option>
+                                <option value="plant">Plant</option>
+                                <option value="undead">Undead</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="custom-speed">Speed (ft):</label>
+                            <input type="text" id="custom-speed" placeholder="e.g., 30 ft., fly 60 ft.">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="custom-actions">Actions (one per line):</label>
+                            <textarea id="custom-actions" placeholder="Bite: Melee attack, 1d8+3 damage
+Claw: Melee attack, 1d6+3 damage"></textarea>
+                        </div>
+
+                        <button class="btn" onclick="convertCustomCreature()">Convert Custom Creature</button>
+                    </div>
+                </div>
+
+                <!-- Text Parser -->
+                <div class="input-method" id="text-method">
+                    <div class="method-header" onclick="selectMethod('text')">
+                        <input type="radio" name="method" value="text" class="method-radio" id="method-text">
+                        <label for="method-text" class="method-title">Parse Raw Statblock Text</label>
+
+                    </div>
+                    <div class="method-content">
+                        <div class="form-group">
+                            <label for="raw-text">Paste statblock text:</label>
+                            <textarea id="raw-text" placeholder="Ancient Red Dragon
+Gargantuan dragon, chaotic evil
+Armor Class 22 (Natural Armor)
+Hit Points 546 (28d20 + 252)
+Speed 40 ft., climb 40 ft., fly 80 ft.
+STR 30 (+10) DEX 10 (+0) CON 29 (+9)
+INT 18 (+4) WIS 15 (+2) CHA 23 (+6)
+
+Actions
+Bite: Melee Weapon Attack: +17 to hit, reach 15 ft., one target. Hit: 21 (2d10 + 10) piercing damage plus 14 (4d6) fire damage.
+Fire Breath: The dragon exhales fire in a 90-foot cone. Each creature in that area must make a DC 24 Dexterity saving throw, taking 91 (26d6) fire damage on a failed save."></textarea>
+                        </div>
+                        <button class="btn" onclick="parseAndConvert()">Parse & Convert</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <h2 class="section-title">Daggerheart Adversary</h2>
+                <div id="message-area"></div>
+                <div id="output-content" class="output-content">
+                    <div class="loading">
+                        Select a conversion method to see the Daggerheart adversary statblock here.
+                    </div>
+                </div>
+                <div class="output-actions">
+                    <button class="btn btn-secondary" onclick="copyToClipboard()" id="copy-btn">
+                        📋 Copy to Clipboard
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadMarkdown()" id="download-btn">
+                        💾 Download as Markdown
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/mappings.js"></script>
+    <script src="js/bestiary-loader.js"></script>
+    <script src="js/converter.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
