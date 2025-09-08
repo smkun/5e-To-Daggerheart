@@ -7,7 +7,7 @@ A comprehensive web application that converts D&D 5e monsters into Daggerheart a
 ### 🎯 **Complete Monster Coverage**
 
 - **80+ Bestiary Files**: Loads all official D&D 5e monsters from JSON files
-- **Comprehensive Database**: 3,000+ creatures from MM, VGM, MTF, and all supplements
+- **Comprehensive Database**: 3,000+ creatures from MM, VGM, MTF, and other supplements
 - **Automatic Updates**: Simply add new bestiary files to load additional monsters
 
 ### 🔄 **Smart Conversion System**
@@ -74,7 +74,7 @@ A comprehensive web application that converts D&D 5e monsters into Daggerheart a
    http://localhost:8000
    ```
 
-4. **Wait for Loading**: The app will automatically load all bestiary files (takes 3-5 seconds)
+4. **Wait for Loading**: The app will automatically load all bestiary files (takes several seconds)
 
 ## 📖 How to Use
 
